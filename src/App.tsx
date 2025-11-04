@@ -11,7 +11,9 @@ function App() {
   const [response, setResponse] = useState<Idata | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // 🧠 Handles search + adds 1s loader for smoother UX
+  const BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
+
+
   const handleSearch = async () => {
     if (!query.trim()) return;
 
@@ -19,7 +21,7 @@ function App() {
     setResponse(null);
 
     try {
-      const res = await fetch("http://localhost:5000/generate", {
+      const res = await fetch(`${BASE_URL}/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
@@ -27,7 +29,6 @@ function App() {
 
       const data = await res.json();
 
-      // wait 1 second before showing result
       setTimeout(() => {
         setResponse(data);
         setLoading(false);
