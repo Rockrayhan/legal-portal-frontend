@@ -1,24 +1,30 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { ArrowUpIcon, SearchIcon, FileTextIcon } from "lucide-react";
+import { SearchIcon, AlertCircle } from "lucide-react";
 import SkeletonCard from "./components/SkeletonCard";
 import type { Idata } from "./types/data";
+import ShowDataCard from "./components/ShowDataCard";
 
 function App() {
   const [query, setQuery] = useState("");
   const [response, setResponse] = useState<Idata | null>(null);
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
 
+  const handleSearch = async (e: any) => {
+    if (e) e.preventDefault();
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
+    if (!query.trim()) {
+      setError("Please enter a legal term to search.");
+      return;
+    }
 
     setLoading(true);
     setResponse(null);
+    setError("");
 
     try {
       const res = await fetch(`${BASE_URL}/generate`, {
@@ -30,60 +36,53 @@ function App() {
       const data = await res.json();
 
       setTimeout(() => {
-        setResponse(data);
+        if (!res.ok) {
+          setError(data.error || "Something went wrong!");
+        } else {
+          setResponse(data);
+        }
         setLoading(false);
-      }, 500);
+      }, 800);
     } catch (err) {
       console.error(err);
+      setError("Server error. Please try again later.");
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-100 p-6">
-      {/* Title */}
-      <h1 className="md:text-3xl text-lg font-bold mb-8 text-slate-800 flex items-center gap-2">
-        ⚖️ Legal Document Search Portal
-      </h1>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+      <h1 className="text-2xl font-bold mb-6">⚖️ Legal Document Search</h1>
 
-      {/* Search Input */}
-      <div className="flex items-center gap-3 mb-10">
+      <form onSubmit={handleSearch} className="flex gap-2 mb-4">
         <Input
           type="text"
-          placeholder="Enter your legal query..."
+          placeholder="Search legal document..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-80 shadow-lg  p-3 border-2 border-gray-300"
+          className="w-72"
         />
-        <Button onClick={handleSearch} disabled={loading}>
+        <Button type="submit" disabled={loading}>
           {loading ? (
-            <>
-              <ArrowUpIcon className="w-4 h-4 animate-bounce" />
-              Searching...
-            </>
+            "Searching..."
           ) : (
             <>
               <SearchIcon className="w-4 h-4" /> Search
             </>
           )}
         </Button>
-      </div>
+      </form>
 
-      {/* Skeleton Loader */}
       {loading && <SkeletonCard />}
 
-      {/* Result Card */}
-      {!loading && response && (
-        <Card className="w-[500px] max-w-full shadow-xl border border-slate-200 hover:shadow-2xl transition-shadow px-5">
-          <CardHeader className="font-semibold text-xl flex items-center gap-2 text-slate-800 bg-slate-50 p-4 rounded-t-lg">
-            <FileTextIcon className="w-5 h-5 text-blue-600" />
-            {response.document}
-          </CardHeader>
-          <CardContent className="text-slate-600 leading-relaxed p-4">
-            {response.summary}
-          </CardContent>
-        </Card>
+      {!loading && error && (
+        <div className="flex items-center gap-2 text-red-600 bg-red-50 px-3 py-2 rounded mb-4">
+          <AlertCircle className="w-5 h-5" />
+          <p>{error}</p>
+        </div>
       )}
+
+      {!loading && response && <ShowDataCard response={response} />}
     </div>
   );
 }
